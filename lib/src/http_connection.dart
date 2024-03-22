@@ -95,6 +95,7 @@ class HttpConnection implements Connection {
   final http.BaseClient? _client;
   Logging? _logging;
   final HttpConnectionOptions _options;
+  final String _connectionData;
   Transport? _transport;
   Future<void>? _startInternalFuture;
   Future<void>? _stopFuture;
@@ -119,7 +120,9 @@ class HttpConnection implements Connection {
   HttpConnection({
     required String? url,
     required HttpConnectionOptions options,
+    required String? connectionData,
   })  : baseUrl = url,
+        _connectionData = connectionData ?? '',
         _client = (options.client != null)
             ? options.client
             : http.Client() as http.BaseClient,
@@ -512,7 +515,10 @@ class HttpConnection implements Connection {
       _transport!
         ..onreceive = onreceive
         ..onclose = (e) => _stopConnection(exception: e);
-      return _transport!.connect(url, transferFormat);
+      if(_connectionData.isEmpty){
+        return _transport!.connect(url, transferFormat);
+      }
+      return _transport!.connectWithData(url, transferFormat, _connectionData);
     } else {
       return Future.value();
     }

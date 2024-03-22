@@ -48,7 +48,6 @@ class HandshakeProtocol {
     HandshakeResponseMessage responseMessage;
     String messageData;
     dynamic remainingData;
-
     if (data is Uint8List) {
       // Format is binary but still need to read JSON text from handshake
       // response
@@ -64,33 +63,49 @@ class HandshakeProtocol {
       remainingData = (data.length > responseLength)
           ? data.sublist(responseLength, data.length)
           : null;
+      responseMessage =  HandshakeResponseMessage(
+        error: null,
+        minorVersion: 1,
+      );
     } else {
       final textData = data as String;
-      final separatorIndex =
-          textData.indexOf(TextMessageFormat.recordSeparator);
-      if (separatorIndex == -1) {
-        throw Exception('Message is incomplete.');
-      }
+      if(textData == '{}'){
+        responseMessage =  HandshakeResponseMessage(
+          error: null,
+          minorVersion: 1,
+        );
+        remainingData = null;
+      }else{
+        final separatorIndex =
+        textData.indexOf(TextMessageFormat.recordSeparator);
+        if (separatorIndex == -1) {
+          throw Exception('Message is incomplete.');
+        }
 
-      // content before separator is handshake response
-      // optional content after is additional messages
-      final responseLength = separatorIndex + 1;
-      messageData = textData.substring(0, responseLength);
-      remainingData = (textData.length > responseLength)
-          ? textData.substring(responseLength)
-          : null;
+        // content before separator is handshake response
+        // optional content after is additional messages
+        final responseLength = separatorIndex + 1;
+        messageData = textData.substring(0, responseLength);
+        remainingData = (textData.length > responseLength)
+            ? textData.substring(responseLength)
+            : null;
+
+        final messages = TextMessageFormat.parse(messageData);
+        final response = HandshakeResponseMessageExtensions.fromJson(
+            json.decode(messages[0]) as Map<String, dynamic>);
+
+        responseMessage = response;
+      }
     }
 
     // At this point we should have just the single handshake message
-    final messages = TextMessageFormat.parse(messageData);
-    final response = HandshakeResponseMessageExtensions.fromJson(
-        json.decode(messages[0]) as Map<String, dynamic>);
+
 
     // if (response.type) {
     //   throw new Error("Expected a handshake response from the server.");
     // }
 
-    responseMessage = response;
+
 
     return (
       remainingData,

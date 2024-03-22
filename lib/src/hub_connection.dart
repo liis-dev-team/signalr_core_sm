@@ -633,7 +633,7 @@ class HubConnection {
   /// has finished invoking the method. When the future resolves, the server
   /// has finished invoking the method. If the server method returns a result,
   /// it is produced as the result of resolving the Future.
-  Future<dynamic> invoke(String methodName, {List<dynamic>? args}) {
+  Future<dynamic> invoke(String methodName, auth, {List<dynamic>? args}) {
     final streamParameters = _replaceStreamParameters(args);
     final invocationDescriptor = _createInvocation(
       methodName: methodName,

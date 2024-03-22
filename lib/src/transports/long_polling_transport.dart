@@ -76,6 +76,9 @@ class LongPollingTransport implements Transport {
     _receiving = _poll(_url, headers);
   }
 
+  @override
+  Future<void> connectWithData(String? url, TransferFormat? transferFormat, String connectionData) async{}
+
   Future<String?> _getAccessToken() async {
     if (_accessTokenFactory != null) {
       return await _accessTokenFactory();

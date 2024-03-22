@@ -20,5 +20,4 @@ Future<void> main(List<String> arguments) async {
     print(message.toString());
   });
 
-  await connection.invoke('SendMessage', args: ['Bob', 'Says hi!']);
 }

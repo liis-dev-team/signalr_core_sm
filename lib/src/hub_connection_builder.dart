@@ -7,7 +7,7 @@ class HubConnectionBuilder {
   HttpTransportType? _httpTransportType;
   String? _url;
   RetryPolicy? reconnectPolicy;
-
+  String? _connectionData;
   /// Configures the [HubConnection] to use HTTP-based transports to connect
   /// to the specified URL.
   // ignore: avoid_returning_this
@@ -29,6 +29,13 @@ class HubConnectionBuilder {
   // ignore: avoid_returning_this
   HubConnectionBuilder withHubProtocol(HubProtocol protocol) {
     _protocol = protocol;
+    return this;
+  }
+
+  /// Configures the [Connection Data] to use the specified connection data.
+  // ignore: avoid_returning_this
+  HubConnectionBuilder withConnectionData(String connectionData) {
+    _connectionData = connectionData;
     return this;
   }
 
@@ -69,7 +76,7 @@ class HubConnectionBuilder {
         HttpConnectionOptions(transport: _httpTransportType);
 
     final connection =
-        HttpConnection(url: _url, options: _httpConnectionOptions!);
+        HttpConnection(url: _url, options: _httpConnectionOptions!,connectionData: _connectionData ?? '' );
 
     return HubConnection(
       connection: connection,

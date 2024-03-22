@@ -71,6 +71,7 @@ extension TransferFormatExtensions on TransferFormat {
 /// applications.
 abstract class Transport {
   Future<void> connect(String? url, TransferFormat? transferFormat);
+  Future<void> connectWithData(String? url, TransferFormat? transferFormat, String connectionData);
   Future<void> send(dynamic data);
   Future<void> stop();
   OnReceive? onreceive;

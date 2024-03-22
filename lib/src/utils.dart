@@ -20,7 +20,7 @@ String getDataDetail(dynamic data, bool? includeContent) {
       detail += '. Content: \'${formatByteBuffer(data)}\'';
     }
   } else if (data is String) {
-    detail = 'String data of length \'${data.length}\'';
+    detail = 'String data of length \'${data}\'';
     if (includeContent!) {
       detail += '. Content: \'$data\'';
     }

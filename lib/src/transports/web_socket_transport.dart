@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:http/http.dart';
 import 'package:signalr_core/src/logger.dart';
@@ -52,14 +53,70 @@ class WebSocketTransport implements Transport {
       if (token!.isNotEmpty) {
         final encodedToken = Uri.encodeComponent(token);
         url =
-            '${url!}${url.contains('?') ? '&' : '?'}access_token=$encodedToken';
+            '${url!}${url.contains('?') ? '&' : '?'}connectionToken=$encodedToken';
       }
     }
+
+    url = "${url!}&transport=webSockets&clientProtocol=1.5&connectionData=[{'name':'geodatahub'}]&tid=${(Random().nextInt(100000000) * 11).floor()}";
 
     final connectFuture = Completer<void>();
     var opened = false;
 
-    url = url!.replaceFirst(RegExp(r'^http'), 'ws');
+    url = url.replaceFirst(RegExp(r'^http'), 'ws');
+
+
+    _channel = await platform.connect(Uri.parse(url), client: _client!);
+
+    _logging(LogLevel.information, 'WebSocket connected to $url.');
+    opened = true;
+
+    _streamSubscription = _channel?.stream.listen((data) {
+      var dataDetail = getDataDetail(data, _logMessageContent);
+      _logging(
+          LogLevel.trace, '(WebSockets transport) data received. $dataDetail');
+      if (onreceive != null) {
+        try {
+          onreceive!(data);
+        } on Exception catch (e1) {
+          _close(e1);
+          return;
+        }
+      }
+    }, onError: (e) {
+      _logging(LogLevel.error,
+          '(WebSockets transport) socket error: ${e.toString()}}');
+    }, onDone: () {
+      if (opened == true) {
+        _close(null);
+      } else {}
+    }, cancelOnError: false);
+
+    return connectFuture.complete();
+  }
+
+  @override
+  Future<void> connectWithData(String? url, TransferFormat? transferFormat, String dataConnection) async {
+    assert(url != null);
+    assert(transferFormat != null);
+
+    _logging!(LogLevel.trace, '(WebSockets transport) Connecting.');
+
+    if (_accessTokenFactory != null) {
+      final token = await _accessTokenFactory();
+      if (token!.isNotEmpty) {
+        final encodedToken = Uri.encodeComponent(token);
+        url =
+        '${url!}${url.contains('?') ? '&' : '?'}connectionToken=$encodedToken';
+      }
+    }
+
+    url = "${url!}&transport=webSockets&clientProtocol=1.5&connectionData=[{'name':'$dataConnection'}]&tid=${(Random().nextInt(100000000) * 11).floor()}";
+
+    final connectFuture = Completer<void>();
+    var opened = false;
+
+    url = url.replaceFirst(RegExp(r'^http'), 'ws');
+
 
     _channel = await platform.connect(Uri.parse(url), client: _client!);
 

@@ -94,6 +94,9 @@ class ServerSentEventsTransport implements Transport {
   }
 
   @override
+  Future<void> connectWithData(String? url, TransferFormat? transferFormat, String connectionData) async{}
+
+  @override
   Future<void> send(data) async {
     if (_sseChannel == null) {
       return Future.error(
