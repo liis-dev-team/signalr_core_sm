@@ -5,7 +5,8 @@ mixin TextMessageFormat {
       String.fromCharCode(TextMessageFormat.RecordSeparatorCode);
 
   static String write(String output) {
-    return '$output${TextMessageFormat.recordSeparator}';
+    return '$output';
+    // return '$output${TextMessageFormat.recordSeparator}';
   }
 
   static List<String> parse(String input) {
@@ -13,9 +14,9 @@ mixin TextMessageFormat {
       throw Exception('Message is incomplete.');
     }
 
-    if (input[input.length - 1] != TextMessageFormat.recordSeparator) {
-      throw Exception('Message is incomplete.');
-    }
+    // if (input[input.length - 1] != TextMessageFormat.recordSeparator) {
+    //   throw Exception('Message is incomplete.');
+    // }
 
     var messages = input.split(TextMessageFormat.recordSeparator)..removeLast();
     return messages;

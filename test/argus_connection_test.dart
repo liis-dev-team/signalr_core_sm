@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:http/io_client.dart';
@@ -11,15 +12,13 @@ import 'first_response_model.dart';
 
 void main() {
   test('login to argus server', () async {
-    // Build our app and trigger a frame.
-
     final url = '93.171.134.34:8070';
-    final basePath = '/signalr/negotiate';
+    final negotiate = '/signalr/negotiate';
     final headers = {
       'Accept-Encoding': 'gzip, deflate',
       'Accept-Language': 'ru-RU,ru;q=0.9',
       'Origin': 'http://testapi.streletz.ru:8080',
-      'Access-Control-Allow-Origin': 'http://testapi.streletz.ru:8080'
+      // 'Access-Control-Allow-Origin': 'http://testapi.streletz.ru:8080'
     };
 
     SecurityContext securityContext = SecurityContext(withTrustedRoots: false);
@@ -31,7 +30,7 @@ void main() {
         (X509Certificate cert, String host, int port) => false;
     IOClient ioClient = IOClient(client);
 
-    final Uri firstRequest = Uri.http(url, basePath, {
+    final Uri firstRequest = Uri.http(url, negotiate, {
       'clientProtocol': '1.5',
       'connectionData': "[{'name': 'commonhub'}]",
       '_': '${DateTime.now().millisecondsSinceEpoch}'
@@ -58,32 +57,49 @@ void main() {
         .withConnectionData('commonhub')
         .build();
 
+    connection.on('broadcastServerTime', (arguments) {
+      print(arguments);
+    });
+    connection.on('getExecuteCommandsResult', (arguments) {
+      print(arguments);
+    });
+    connection.on('getExecuteMacroResult', (arguments) {
+      print(arguments);
+    });
+
     await connection.start();
 
-    final Uri secondRequest = Uri.http(url, basePath, {
-      'clientProtocol': '1.5',
+
+
+    connection.invoke('authenticateAndGetClientData', args: [
+      A(
+          userLogin: 'web1',
+          userPassword: 'IntegralWeb1',
+          connectionId: firstResponseModel.connectionId,
+          allowedToBrodcastEvents: '')
+    ]).then((value) async{
+      await connection.invoke(
+          'getInitialSystemConState',
+          args: ['firstResponseModel.connectionId']);
+     await connection.invoke(
+          'getInitialSegmentConState',
+          args: ['firstResponseModel.connectionId']);
+      print(value);
+    });
+
+    final start = '/signalr/start';
+
+    final Uri secondRequest = Uri.http(url, start, {
       'transport': 'webSockets',
+      'clientProtocol': '1.5',
       'connectionToken': firstResponseModel.connectionToken,
-      'connectionData': "[{'name': 'commonhub'}]",
+      'connectionData': '[{"name": "commonhub"}]',
       '_': '${DateTime.now().millisecondsSinceEpoch}'
     });
+
     final secondResponse = await ioClient.get(secondRequest, headers: headers);
-
-    Auth a = Auth(
-        H: 'commonhub',
-        M: 'authenticateAndGetClientData',
-        I: 0,
-        a: [A(
-            userLogin: 'web1',
-            userPassword: 'IntegralWeb1',
-            connectionId: firstResponseModel.connectionId,
-            allowedToBrodcastEvents: 'null')]);
-
-    connection.invoke('authenticateAndGetClientData', [a]);
-
     print('secondResponse.body');
     print(secondResponse.body);
 
-    Future.delayed(Duration(seconds: 20));
   });
 }

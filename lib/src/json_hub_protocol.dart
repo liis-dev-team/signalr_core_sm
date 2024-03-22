@@ -28,6 +28,8 @@ class JsonHubProtocol implements HubProtocol {
           'Invalid input for JSON hub protocol. Expected a string.');
     }
 
+    print(input);
+
     final jsonInput = input;
     final hubMessages = <HubMessage?>[];
 
@@ -37,46 +39,65 @@ class JsonHubProtocol implements HubProtocol {
     }
 
     // Parse the messages
-    final messages = TextMessageFormat.parse(jsonInput);
-    for (var message in messages) {
-      final jsonData = json.decode(message);
-      final messageType =
-          _getMessageTypeFromJson(jsonData as Map<String, dynamic>);
-      HubMessage? parsedMessage;
-
-      switch (messageType) {
-        case MessageType.invocation:
-          parsedMessage = InvocationMessageExtensions.fromJson(jsonData);
-          _isInvocationMessage(parsedMessage as InvocationMessage);
-          break;
-        case MessageType.streamItem:
-          parsedMessage = StreamItemMessageExtensions.fromJson(jsonData);
-          _isStreamItemMessage(parsedMessage as StreamItemMessage);
-          break;
-        case MessageType.completion:
-          parsedMessage = CompletionMessageExtensions.fromJson(jsonData);
-          _isCompletionMessage(parsedMessage as CompletionMessage);
-          break;
-        case MessageType.ping:
-          parsedMessage = PingMessageExtensions.fromJson(jsonData);
-          // Single value, no need to validate
-          break;
-        case MessageType.close:
-          parsedMessage = CloseMessageExtensions.fromJson(jsonData);
-          // All optional values, no need to validate
-          break;
-        default:
-          // Future protocol changes can add message types, old clients can ignore them
-          logging!(
-              LogLevel.information,
-              'Unknown message type \'' +
-                  messageType.toString() +
-                  '\' ignored.');
-          continue;
-      }
+    // final messages = TextMessageFormat.parse(jsonInput);
+    // for (var message in messages) {
+    //   final jsonData = json.decode(message);
+    //   final messageType =
+    //       _getMessageTypeFromJson(jsonData as Map<String, dynamic>);
+    //   HubMessage? parsedMessage;
+    //
+    //   switch (messageType) {
+    //     case MessageType.invocation:
+    //       parsedMessage = InvocationMessageExtensions.fromJson(jsonData);
+    //       _isInvocationMessage(parsedMessage as InvocationMessage);
+    //       break;
+    //     case MessageType.streamItem:
+    //       parsedMessage = StreamItemMessageExtensions.fromJson(jsonData);
+    //       _isStreamItemMessage(parsedMessage as StreamItemMessage);
+    //       break;
+    //     case MessageType.completion:
+    //       parsedMessage = CompletionMessageExtensions.fromJson(jsonData);
+    //       _isCompletionMessage(parsedMessage as CompletionMessage);
+    //       break;
+    //     case MessageType.ping:
+    //       parsedMessage = PingMessageExtensions.fromJson(jsonData);
+    //       // Single value, no need to validate
+    //       break;
+    //     case MessageType.close:
+    //       parsedMessage = CloseMessageExtensions.fromJson(jsonData);
+    //       // All optional values, no need to validate
+    //       break;
+    //     default:
+    //       // Future protocol changes can add message types, old clients can ignore them
+    //       logging!(
+    //           LogLevel.information,
+    //           'Unknown message type \'' +
+    //               messageType.toString() +
+    //               '\' ignored.');
+    //       continue;
+    //   }
+    //   hubMessages.add(parsedMessage);
+    // }
+    final jsonData = json.decode(input);
+    if(jsonData['M']is List<dynamic>){
+      /*
+      'H': 'commonhub',
+      'I': invocationId,
+      'M': target,
+      'A': arguments ?? [],
+          this.target,
+          this.arguments,
+          this.streamIds,
+          super.headers,
+          super.invocationId,
+       */
+      dynamic message = jsonData['M'][0];
+      String method= message['M'] as String;
+      String hub= message['H'] as String;
+      List<dynamic> args= message['A'] as List<dynamic>;
+      HubMessage? parsedMessage = StreamInvocationMessage(target: '$hub:$method', arguments: args, );
       hubMessages.add(parsedMessage);
     }
-
     return hubMessages;
   }
 
@@ -184,12 +205,19 @@ extension InvocationMessageExtensions on InvocationMessage {
   }
 
   Map<String, dynamic> toJson() {
+    String method = target!;
+    String id = invocationId!;
+    if(method == 'getInitialSystemConState'){
+      id = '1';
+    }else if(method == 'getInitialSegmentConState'){
+      id = '2';
+    }
     return {
-      'type': type?.value,
-      if (invocationId != null) 'invocationId': invocationId,
-      'target': target,
-      'arguments': arguments ?? [],
-      if (streamIds != null) 'streamIds': streamIds
+      'H': 'commonhub',
+      'I': invocationId,
+      'M': target,
+      'A': arguments ?? [],
+      // if (streamIds != null) 'streamIds': streamIds
     };
   }
 }
